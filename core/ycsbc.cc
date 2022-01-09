@@ -78,7 +78,7 @@ int main(const int argc, const char *argv[]) {
   wl.Init(props);
 
   const bool show_status = (props.GetProperty("status", "false") == "true");
-  const int status_interval = std::stoi(props.GetProperty("status.interval", "10"));
+  const int status_interval = std::stoi(props.GetProperty("status.interval", "10000"));
 
   // load phase
   if (do_load) {
@@ -259,7 +259,7 @@ void UsageMessage(const char *command) {
       "  -p name=value: specify a property to be passed to the DB and workloads\n"
       "                 multiple properties can be specified, and override any\n"
       "                 values in the propertyfile\n"
-      "  -s: print status every 10 seconds (use status.interval prop to override)"
+      "  -s: print status every 10000 milliseconds (use status.interval prop to override)"
       << std::endl;
 }
 

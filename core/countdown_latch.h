@@ -20,10 +20,12 @@ class CountDownLatch {
       cv_.wait(lock);
     }
   }
-  bool AwaitFor(long timeout_sec) {
+  // bool AwaitFor(long timeout_sec) {
+  bool AwaitFor(long timeout_msec) {
     std::unique_lock<std::mutex> lock(mu_);
     if (count_ > 0) {
-      return cv_.wait_for(lock, std::chrono::seconds(timeout_sec)) == std::cv_status::no_timeout;
+      // return cv_.wait_for(lock, std::chrono::seconds(timeout_sec)) == std::cv_status::no_timeout;
+      return cv_.wait_for(lock, std::chrono::milliseconds(timeout_msec)) == std::cv_status::no_timeout;
     }
     return true;
   }
