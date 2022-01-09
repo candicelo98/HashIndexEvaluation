@@ -35,7 +35,7 @@ const string CoreWorkload::TABLENAME_PROPERTY = "table";
 const string CoreWorkload::TABLENAME_DEFAULT = "usertable";
 
 const string CoreWorkload::FIELD_COUNT_PROPERTY = "fieldcount";
-const string CoreWorkload::FIELD_COUNT_DEFAULT = "10";
+const string CoreWorkload::FIELD_COUNT_DEFAULT = "1";
 
 const string CoreWorkload::FIELD_LENGTH_DISTRIBUTION_PROPERTY = "field_len_dist";
 const string CoreWorkload::FIELD_LENGTH_DISTRIBUTION_DEFAULT = "constant";
@@ -47,13 +47,13 @@ const string CoreWorkload::READ_ALL_FIELDS_PROPERTY = "readallfields";
 const string CoreWorkload::READ_ALL_FIELDS_DEFAULT = "true";
 
 const string CoreWorkload::WRITE_ALL_FIELDS_PROPERTY = "writeallfields";
-const string CoreWorkload::WRITE_ALL_FIELDS_DEFAULT = "false";
+const string CoreWorkload::WRITE_ALL_FIELDS_DEFAULT = "true";
 
 const string CoreWorkload::READ_PROPORTION_PROPERTY = "readproportion";
-const string CoreWorkload::READ_PROPORTION_DEFAULT = "0.95";
+const string CoreWorkload::READ_PROPORTION_DEFAULT = "1.0";
 
 const string CoreWorkload::UPDATE_PROPORTION_PROPERTY = "updateproportion";
-const string CoreWorkload::UPDATE_PROPORTION_DEFAULT = "0.05";
+const string CoreWorkload::UPDATE_PROPORTION_DEFAULT = "0.0";
 
 const string CoreWorkload::INSERT_PROPORTION_PROPERTY = "insertproportion";
 const string CoreWorkload::INSERT_PROPORTION_DEFAULT = "0.0";
