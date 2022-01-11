@@ -42,20 +42,32 @@ class NapdbDB : public DB {
     return (this->*(method_delete_))(key);
   }
 
-  /* Do not support method Scan. Always returns Status=OK */
+  /* Do not support method Scan. */
   Status Scan(const std::string &table, const std::string &key, int len,
               const std::vector<std::string> *fields, std::vector<std::vector<Field>> &result) {
-    return kOK;
+    return kNotImplemented;
   }
 
-  /* Do not support method Update. Always returns Status=OK */
+  /* Do not support method Update. */
   Status Update(const std::string &table, const std::string &key, std::vector<Field> &values) {
-    return kOK;
+    return kNotImplemented;
   }
 
+ private:
+  Status ReadSingleEntry(const std::string &key, std::vector<Field> &result);
+  Status InsertSingleEntry(const std::string &key, std::vector<Field> & values);
+  Status DeleteSingleEntry(const std::string &key);
+
+  Status (NapdaDB::*method_read_)(const std::string &key, std::vector<Field> &result);
+  Status (NapdbDB::*method_insert_)(const std::string &key, std::vector<Field> &values);
+  Status (NapdbDB::*method_delete_)(const std::string &key);
+
+  static int ref_cnt_;
+  static std::mutex mu_;
+  static nap::HT *db_;
 };
 
-DB *NewLeveldbDB();
+DB *NewNapdbDB();
 
 } // ycsbc
 

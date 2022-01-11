@@ -47,7 +47,7 @@ const string CoreWorkload::READ_ALL_FIELDS_PROPERTY = "readallfields";
 const string CoreWorkload::READ_ALL_FIELDS_DEFAULT = "true";
 
 const string CoreWorkload::WRITE_ALL_FIELDS_PROPERTY = "writeallfields";
-const string CoreWorkload::WRITE_ALL_FIELDS_DEFAULT = "true";
+const string CoreWorkload::WRITE_ALL_FIELDS_DEFAULT = "false";
 
 const string CoreWorkload::READ_PROPORTION_PROPERTY = "readproportion";
 const string CoreWorkload::READ_PROPORTION_DEFAULT = "1.0";

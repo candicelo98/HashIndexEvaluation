@@ -12,103 +12,49 @@
 #include "core/db_factory.h"
 
 namespace {
-  const std::string PROP_NAME = "leveldb.dbname";
-  const std::string PROP_NAME_DEFAULT = "";
+  const std::string PROP_NUM_OF_THREAD = "napdb.num_of_thread";
+  const std::string PROP_NUM_OF_THREAD_DEFAULT = "8";
 
-  const std::string PROP_FORMAT = "leveldb.format";
-  const std::string PROP_FORMAT_DEFAULT = "single";
+  const std::string PROP_DRAM_ENTRIES = "napdb.dram_entries";
+  const std::string PROP_DRAM_ENTRIES_DEFAULT = "100000"; // 100k
 
-  const std::string PROP_DESTROY = "leveldb.destroy";
-  const std::string PROP_DESTROY_DEFAULT = "false";
-
-  const std::string PROP_COMPRESSION = "leveldb.compression";
-  const std::string PROP_COMPRESSION_DEFAULT = "no";
-
-  const std::string PROP_WRITE_BUFFER_SIZE = "leveldb.write_buffer_size";
-  const std::string PROP_WRITE_BUFFER_SIZE_DEFAULT = "-1";
-
-  const std::string PROP_MAX_FILE_SIZE = "leveldb.max_file_size";
-  const std::string PROP_MAX_FILE_SIZE_DEFAULT = "-1";
-
-  const std::string PROP_MAX_OPEN_FILES = "leveldb.max_open_files";
-  const std::string PROP_MAX_OPEN_FILES_DEFAULT = "-1";
-
-  const std::string PROP_CACHE_SIZE = "leveldb.cache_size";
-  const std::string PROP_CACHE_SIZE_DEFAULT = "-1";
-
-  const std::string PROP_FILTER_BITS = "leveldb.filter_bits";
-  const std::string PROP_FILTER_BITS_DEFAULT = "-1";
+  const std::string PROP_NVM_ENTRIES_INIT = "napdb.nvm_entries_init";
+  const std::string PROP_NVM_ENTRIES_INIT_DEFAULT = "524288"; // 2M/4
 } // anonymous
 
 namespace ycsbc {
 
-leveldb::DB *LeveldbDB::db_ = nullptr;
-int LeveldbDB::ref_cnt_ = 0;
-std::mutex LeveldbDB::mu_;
+nap::HT *NapdbDB::db_ = nullptr;
+int NapdDB::ref_cnt_ = 0;
+std::mutex NapdbDB::mu_;
 
-void LeveldbDB::Init() {
+void NapdbDB::Init() {
   const std::lock_guard<std::mutex> lock(mu_);
 
   const utils::Properties &props = *props_;
-  const std::string &format = props.GetProperty(PROP_FORMAT, PROP_FORMAT_DEFAULT);
-  if (format == "single") {
-    format_ = kSingleEntry;
-    method_read_ = &LeveldbDB::ReadSingleEntry;
-    method_scan_ = &LeveldbDB::ScanSingleEntry;
-    method_update_ = &LeveldbDB::UpdateSingleEntry;
-    method_insert_ = &LeveldbDB::InsertSingleEntry;
-    method_delete_ = &LeveldbDB::DeleteSingleEntry;
-  } else if (format == "row") {
-    format_ = kRowMajor;
-    method_read_ = &LeveldbDB::ReadCompKeyRM;
-    method_scan_ = &LeveldbDB::ScanCompKeyRM;
-    method_update_ = &LeveldbDB::InsertCompKey;
-    method_insert_ = &LeveldbDB::InsertCompKey;
-    method_delete_ = &LeveldbDB::DeleteCompKey;
-  } else if (format == "column") {
-    format_ = kColumnMajor;
-    method_read_ = &LeveldbDB::ReadCompKeyCM;
-    method_scan_ = &LeveldbDB::ScanCompKeyCM;
-    method_update_ = &LeveldbDB::InsertCompKey;
-    method_insert_ = &LeveldbDB::InsertCompKey;
-    method_delete_ = &LeveldbDB::DeleteCompKey;
-  } else {
-    throw utils::Exception("unknown format");
-  }
-  fieldcount_ = std::stoi(props.GetProperty(CoreWorkload::FIELD_COUNT_PROPERTY,
-                                            CoreWorkload::FIELD_COUNT_DEFAULT));
-  field_prefix_ = props.GetProperty(CoreWorkload::FIELD_NAME_PREFIX,
-                                    CoreWorkload::FIELD_NAME_PREFIX_DEFAULT);
-
+  
+  method_read_ = &LeveldbDB::ReadSingleEntry;
+  method_insert_ = &LeveldbDB::InsertSingleEntry;
+  method_delete_ = &LeveldbDB::DeleteSingleEntry;
+  
   ref_cnt_++;
-  if (db_) {
+  if(db_){
     return;
   }
 
-  const std::string &db_path = props.GetProperty(PROP_NAME, PROP_NAME_DEFAULT);
-  if (db_path == "") {
-    throw utils::Exception("LevelDB db path is missing");
+  int thread_cnt_ = std::stoi(props.GetProperty(PROP_NUM_OF_THREAD, PROP_NUM_OF_THREAD_DEFAULT));
+  if (thread_cnt_ < 2) {
+    throw utils::Exception("Total thread count less than 2");
   }
+  int dram_ety_cnt_ = std::stoi(props.GetProperty(PROP_DRAM_ENTRIES, PROP_DRAM_ENTRIES_DEFAULT));
+  int nvm_ety_cnt_ = std::stoi(props.GetProperty(PROP_NVM_ENTRIES, PROP_NVM_ENTRIES_DEFAUKT));
 
-  leveldb::Options opt;
-  opt.create_if_missing = true;
-  GetOptions(props, &opt);
-
-  leveldb::Status s;
-
-  if (props.GetProperty(PROP_DESTROY, PROP_DESTROY_DEFAULT) == "true") {
-    s = leveldb::DestroyDB(db_path, opt);
-    if (!s.ok()) {
-      throw utils::Exception(std::string("LevelDB DestroyDB: ") + s.ToString());
-    }
-  }
-  s = leveldb::DB::Open(opt, db_path, &db_);
-  if (!s.ok()) {
-    throw utils::Exception(std::string("LevelDB Open: ") + s.ToString());
+  if(!nap::HT::newHashTable(dram_ety_cnt_, nvm_entry_cnt_, &db_)){
+    throw::utils::Exception("Fail to create hash table");
   }
 }
 
-void LeveldbDB::Cleanup() {
+void NapdbDB::Cleanup() {
   const std::lock_guard<std::mutex> lock(mu_);
   if (--ref_cnt_) {
     return;
