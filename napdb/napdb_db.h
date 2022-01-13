@@ -55,7 +55,7 @@ class NapdbDB : public DB {
 
  private:
   Status ReadSingleEntry(const std::string &key, std::vector<Field> &result);
-  Status InsertSingleEntry(const std::string &key, std::vector<Field> & values);
+  Status InsertSingleEntry(const std::string &key, std::vector<Field> &values);
   Status DeleteSingleEntry(const std::string &key);
 
   Status (NapdaDB::*method_read_)(const std::string &key, std::vector<Field> &result);
@@ -65,6 +65,8 @@ class NapdbDB : public DB {
   static int ref_cnt_;
   static std::mutex mu_;
   static nap::HT *db_;
+
+  std::string field_prefix_;
 };
 
 DB *NewNapdbDB();
