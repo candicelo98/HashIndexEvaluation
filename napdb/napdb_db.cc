@@ -80,7 +80,7 @@ DB::Status NapdbDB::InsertSingleEntry(const std::string &key, std::vector<Field>
   if(!s){
     throw utils::Exception("Fail to insert a new item");
   }
-  retr kOK;
+  return kOK;
 }
 
 DB::Status NapdbDB::DeleteSingleEntry(const std::string &key){
