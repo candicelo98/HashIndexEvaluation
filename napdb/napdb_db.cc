@@ -11,6 +11,8 @@
 #include "core/core_workload.h"
 #include "core/db_factory.h"
 
+#include "include/slice.h"
+
 namespace {
   const std::string PROP_NUM_OF_THREAD = "napdb.num_of_thread";
   const std::string PROP_NUM_OF_THREAD_DEFAULT = "8";
@@ -21,8 +23,6 @@ namespace {
   const std::string PROP_NVM_ENTRIES_INIT = "napdb.nvm_entries_init";
   const std::string PROP_NVM_ENTRIES_INIT_DEFAULT = "524288"; // 2M/4
 } // anonymous
-
-namespace ycsbc {
 
 nap::HT *NapdbDB::db_ = nullptr;
 int NapdDB::ref_cnt_ = 0;
@@ -66,7 +66,7 @@ void NapdbDB::Cleanup() {
 
 DB::Status NapdbDB::ReadSingleEntry(const std::string &key, std::vector<Field> &result){
   std::string data;
-  bool s = db_->Get(key, data);
+  bool s = db_->Get(Slice(key), data);
   if(!s){
     return kNotFound;
   }else{
@@ -76,10 +76,7 @@ DB::Status NapdbDB::ReadSingleEntry(const std::string &key, std::vector<Field> &
 }
 
 DB::Status NapdbDB::InsertSingleEntry(const std::string &key, std::vector<Field> &values){
-  bool s = db_->Put(key, values[0].value);
-  if(!s){
-    throw utils::Exception("Fail to insert a new item");
-  }
+  db_->Put(Slice(key), Slice(values[0].value));
   return kOK;
 }
 

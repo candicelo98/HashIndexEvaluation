@@ -12,7 +12,7 @@ struct Node {
 	std::string key;
 	int cnt;
 
-	Node(const std::string &s, int c):key(s),cnt(c) {}
+	Node(const std::string &s, int c):key(s),cnt(c) { }
 
 	bool operator<() const {
 		return this->cnt < other.cnt;
@@ -44,26 +44,29 @@ public:
 
 	std::vector<Node>& get_list(){ return minHeap; }
 
-	void accessKey(const std::string &key, int freq){
-		std::unordered_map<std::string, int>::const_iterator iter = offsetMap.find(key);
+	void access_a_key(const std::string &key, int freq){
+		auto iter = offsetMap.find(key);
 
-		if(iter!=offsetMap.end()){
+		if (iter != offsetMap.end()) {
 			int i = iter->second;
 
 			minHeap[i].cnt = freq;
 			shiftDown(i);
-		}else if(size<=K){
+		} else if (size <= K) {
 			minHeap.push_back(Node(key, freq));
+			offsetMap[key] = size;
+
 			shiftUp(size++);
-			assert(minHeap.size()==size);
-		}else if(minHeap[1].cnt<freq){
+			// assert(minHeap.size()==size);
+		} else if (minHeap[1].cnt < freq) {
 			minHeap[1] = Node(key, freq);
+			
 			shiftDown(1);
 		}
 	}
 
 	void shiftUp(int i){
-		while(i>1 && minHeap[i]<minHeap[i/2]){
+		while(i > 1 && minHeap[i] < minHeap[i/2]) {
 			swapNode(minHeap[i], minHeap[i/2]);
 			oddsetMap[minHeap[i/2].key] = i/2;
 			offsetMap[minHeap[i].key] = i;

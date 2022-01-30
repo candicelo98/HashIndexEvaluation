@@ -47,7 +47,7 @@ struct ReadFriendlyLock {
 
 class WRLock {
 private:
-	std::atomic<uint16_t> wrlock;
+	std::atomic<uint16_t> l;
 	const static uint16_t UNLOCKED = 0x0;
 	const static uint16_t LOCKED = 0x1;
 	const static uint16_t PUT_LOCKED = 0x3;
@@ -55,35 +55,35 @@ private:
 public:
 	WRLock() { init(); }
 
-	void operator=(const WRLock &lock2) { wrlock.store(lock2.wrlock.load()); }
-	bool is_unlock() { return wrlock.load()==UNLOCKED; }
-	void init() { wrlock.store(UNLOCKED); }
+	void operator=(const WRLock &lock2) { l.store(lock2.l.load()); }
+	bool is_unlock() { return l.load()==UNLOCKED; }
+	void init() { l.store(UNLOCKED); }
 
 	void wLock() {
 		while(true){
-			while(wrlock.load(std::memory_order_relaxed)!=UNLOCKED);
+			while(l.load(std::memory_order_relaxed)!=UNLOCKED);
 
 			uint16_t f = UNLOCKED;
-			if(wrlock.compare_exchange_strong(f, LOCKED)){
+			if(l.compare_exchange_strong(f, LOCKED)){
 				break;
 			}
 		}
 	}
 
 	bool try_wLock() {
-		if(wrlock.load(std::memory_order_relaxed)!=UNLOCKED)
+		if(l.load(std::memory_order_relaxed)!=UNLOCKED)
 			return false;
 
 		uint16_t f = UNLOCKED;
-		return wrlock.compare_exchange_strong(f, LOCKED);
+		return l.compare_exchange_strong(f, LOCKED);
 	}
 
 	void putLock() {
 		while(true){
-			while(wrlock.load(std::memory_order_relaxed)!=UNLOCKED);
+			while(l.load(std::memory_order_relaxed)!=UNLOCKED);
 
 			uint16_t f = UNLOCKED;
-			if(wrlock.compare_exchange_strong(f, PUT_LOCKED)){
+			if(l.compare_exchange_strong(f, PUT_LOCKED)){
 				break;
 			}
 		}
@@ -91,13 +91,13 @@ public:
 
 	bool try_putLock(bool &isWriter) {
 		uint16_t v;
-		if((v=wrlock.load(std::memory+order_relaxed))!=UNLOCKED){
+		if((v=l.load(std::memory_order_relaxed))!=UNLOCKED){
 			isWriter = (v==PUT_UNLOCKED);
 			return false;
 		}
 
 		uint16_t f = UNLOCKED;
-		bool res = wrlock.compare_exchange_strong(f, PUt_LOCKED);
+		bool res = l.compare_exchange_strong(f, PUT_LOCKED);
 		isWriter = (f==PUT_LOCKED);
 
 		return res;
@@ -107,9 +107,9 @@ public:
 		while(true){
 			uint16_t v;
 			while(((v = l.load(std::memory_order_relaxed)) & 0x1) == LOCKED);
-			uint16_t b = v+4;
+			uint16_t b = v + 4;
 
-			if(wrlock.compare_exchange_stong(v,b)) {
+			if(l.compare_exchange_stong(v,b)) {
 				break;
 			}
 		}
@@ -131,20 +131,20 @@ public:
 
 	void rUnlock() {
 		while(true){
-			uint16_t v = wrlock.load();
-			uint16_t b = v-4;
+			uint16_t v = l.load();
+			uint16_t b = v - 4;
 
-			if(wrlock.compare_exchange_strong(v, b)) {
+			if(l.compare_exchange_strong(v, b)) {
 				break;
 			}
 		}
 	}
 
-	void wUnlock() { wrlock.store(UNLOCKED, std::memory_order_release); }
+	void wUnlock() { l.store(UNLOCKED, std::memory_order_release); }
 	
-	void putUnlock() { wrlock.store(UNLOCKED, std::memory_order_release); }
+	void putUnlock() { l.store(UNLOCKED, std::memory_order_release); }
 };
 
-}
+} // namespace nap
 
 #endif // _WRLOCK_H_

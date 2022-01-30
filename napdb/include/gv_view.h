@@ -21,7 +21,7 @@ public:
 
 	struct Entry {
 
-		WRLock wrLock; //control concurrent accesses to the NAL
+		WRLock l; //control concurrent accesses to the NAL
 		bool is_deleted;
 		bool shifting;
 
@@ -29,7 +29,7 @@ public:
 		WhereIsData location;
 
 		// serve lookup operation
-		Slice *v;
+		std::string v;
 
 		// for recovery
 		uint64_t version;
@@ -50,7 +50,7 @@ public:
 	}
 
 	bool get_entry(const Slice &key, Entry *&entry) {	
-		std::vector<std::pair<std::string, WhereIsData>>::const_iterator ret = view.find(jey.toString());
+		auto ret = view.find(jey.toString());
 		if(ret == view.end()) {
 			return false;
 		}
@@ -63,14 +63,14 @@ public:
 	void relocate_value(GVView *old_view) {
 		for(auto e : view){
 			if(e.second.location==WhereIsData::IN_PREVIOUS_EPOCH){
-				w.second.wrlock.wLock();
+				e.second.l.wLock();
 				if(e.second.location==WhereIsData::IN_PREVIOUS_EPOCH){
 					e.second.location = WhereIsData::IN_CURRENT_EPOCH;
 					auto &old_e = old_view->view[e.first];
 					e.second.v = old_e.v;
 					e.second.is_deleted = old_e.is_deleted;
 				}
-				e.second.wrlock.wUnlock();
+				e.second.l.wUnlock();
 			}
 		}
 	}
@@ -78,12 +78,16 @@ public:
 	template <class T>
 	void flush_to_raw_index(T *raw_index) {
 		for(auto e : view){
-			raw_index->put(Slice(e.first), *v);
+			e.second.l.rLock();
+			if(!e->is_deleted && e.second.location!=WhereIsData::IN_RAW_INDEX) {
+				raw_index->put(Slice(e.first), Slice(e.second.v));
+			}
+			e.second.l.rUnlock();
 		}
 	}
 
-}; // namespace nap
+};
 
-}
+} // namespace nap
 
 #endif // _GV_VIEW_H_

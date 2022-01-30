@@ -1,12 +1,13 @@
 #ifndef _COUNT_MIN_SKETCH_H_
 #define _COUNT_MIN_SKETCH_H_
 
+#include "hash32.h"
+#include "murmur_hash2.h"
 #include "top_k.h"
 #include "slice.h"
 #include "nap_common.h"
 #include "topology.h"
 #include "timer.h"
-#include "murmur_hash2.h"
 
 #include <functional>
 #include <queue>
@@ -96,11 +97,11 @@ public:
 			buf = free_buffer;
 			free_buffer = nullptr;
 		}else{
-			buf = (char*)malloc(key.Size()+sizeof(uint32_t));
+			buf = (char*)malloc(key.size()+sizeof(uint32_t));
 		}
 
-		*(uint32_t)buf = key.Size();
-		memcpy(buf+sizeof(uint32_t), key.Data(), key.Size());
+		*(uint32_t)buf = key.size();
+		memcpy(buf+sizeof(uint32_t), key.data(), key.size());
 
 		char *old_ptr = thread_records[index].v;
 		
@@ -121,21 +122,21 @@ public:
 
 	void poll_workloads(double seconds){
 		uint64_t ns = seconds * (1000ull*1000*1000);
-		uint64_t kBatchPerThread = 8;
+		uint16_t kBatchPerThread = 8;
 
 		Timer timer;
 		timer.begin();
 
 		while(true){
 			for(int i=0;i<kMaxThreadCnt;i++){
-				for(int j=0;j<kBatch PerThread;j++){
+				for(int j=0;j<kBatchPerThread;j++){
 					RecordCursor &c = cursors[i];
 					RecordCursor &r = record_buffer[i][c.last_index];
 					if(r.timestamp<c.last_ts || r.v==nullptr){
-						return;
+						break; // invalid record
 					}
 
-					this->accessKey(Slice(r.v+sizeof(uint32_t), *(uint32_t*)r.v));
+					this->access_a_key(Slice(r.v+sizeof(uint32_t), *(uint32_t*)r.v));
 					c.last_ts = r.timestamp;
 					c.last_index = (c.last_index+1)%kRecordBufferSize;
 				}
@@ -146,10 +147,10 @@ public:
 		}
 	}
 
-	void accessKey(const Slice &key){
+	void access_a_key(const Slice &key){
 		uint64_t hash_val[kHashCnt];
 		for(int i=0;i<kHashCnt;i++){
-			hash_val[i] = (MurmurHash64A(key.Data(), key.Size(), hahSeed[i]))%kBloomLength;
+			hash_val[i] = (MurmurHash64A(key.data(), key.size(), hashSeed[i]))%kBloomLength;
 		}
 
 		uint32_t minFreq = ++bloomArray[0][hash_val[0]];
@@ -159,7 +160,7 @@ public:
 				minFreq = tmp;
 			}
 		}
-		topK.accessKey(key.tpString(). minFreq);
+		topK.access_a_key(key.ToString(). minFreq);
 	}
 };
 
